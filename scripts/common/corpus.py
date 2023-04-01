@@ -33,9 +33,9 @@ class Corpus:
         self.data_dir = args.data_dir
 
         self.name = args.name
-        self.vocab = args.vocab + ' |'
+        self.vocab = f'{args.vocab} |'
 
-        self.dataset_dir = os.path.join(self.data_dir, '{}_dataset'.format(self.name))
+        self.dataset_dir = os.path.join(self.data_dir, f'{self.name}_dataset')
         if not os.path.exists(self.dataset_dir):
             os.makedirs(self.dataset_dir)
         self.extracted_dir = os.path.join(self.dataset_dir, "extracted")
@@ -77,7 +77,7 @@ class Corpus:
                             if url.find(f) != -1:
                                 break
                         else:
-                            print("Skipping url: {}".format(url))
+                            print(f"Skipping url: {url}")
                             continue
 
                     fname = wget.detect_filename(url)
@@ -89,25 +89,27 @@ class Corpus:
                     if not os.path.exists(os.path.join(self.extracted_dir, set_type)):
                         os.makedirs(os.path.join(self.extracted_dir, set_type))
 
-                    print('\nDownloading {}...'.format(fname))
+                    print(f'\nDownloading {fname}...')
                     if not os.path.exists(target_fname):
                         wget.download(url, target_fname)
                     else:
-                        print("\nFile {} already downloaded".format(fname))
+                        print(f"\nFile {fname} already downloaded")
 
-                    print("\nUnpacking {}...".format(fname))
+                    print(f"\nUnpacking {fname}...")
                     if not os.path.exists(curr_extracted_dir):
                         tar = tarfile.open(target_fname)
                         tar.extractall(curr_extracted_dir)
                         tar.close()
                     else:
-                        print("\nFile {} already unpacked".format(fname))
+                        print(f"\nFile {fname} already unpacked")
 
                     if not keep_download:
-                        print("Removing downloaded file {}...".format(target_fname))
+                        print(f"Removing downloaded file {target_fname}...")
                         os.remove(target_fname)
 
-                    assert os.path.exists(curr_extracted_dir), "Archive {} was not properly uncompressed.".format(fname)
+                    assert os.path.exists(
+                        curr_extracted_dir
+                    ), f"Archive {fname} was not properly uncompressed."
 
                 else:
                     print('No URL found. Skipping download.')
@@ -118,12 +120,10 @@ class Corpus:
         outpath = inpath.replace('extracted', 'preprocessed')
         splitpath = outpath.split(os.sep)
         os.makedirs(os.path.join(*splitpath[:-1]), exist_ok=True)
-        
-        audio_ext = None
-        for ext in [".flac", ".mp3", ".wav"]:
-            if file.endswith(ext):
-                audio_ext = ext
-                break
+
+        audio_ext = next(
+            (ext for ext in [".flac", ".mp3", ".wav"] if file.endswith(ext)), None
+        )
         if audio_ext is not None:
             audio, orig_sr = librosa.load(inpath, sr=None, mono=True)
             audio = librosa.resample(audio, orig_sr, self.fs)
@@ -132,29 +132,30 @@ class Corpus:
             shutil.copyfile(inpath, outpath)
 
     def pre_process_audios(self, keep_extracted=False):
-        assert os.path.exists(self.extracted_dir), 'No folder found in {}'.format(
-            self.extracted_dir)
+        assert os.path.exists(
+            self.extracted_dir
+        ), f'No folder found in {self.extracted_dir}'
         for root, subfolders, files in os.walk(self.extracted_dir):
             print(f'Pre processing {root}')
             if self._num_jobs > 1:
                 with concurrent.futures.ProcessPoolExecutor(self._num_jobs) as \
-                        executor:
+                                        executor:
                     futures = [executor.submit(self._preprocess_file, root, file)
                                 for file in files]
-                    for f in tqdm(concurrent.futures.as_completed(futures)):
+                    for _ in tqdm(concurrent.futures.as_completed(futures)):
                         pass
             else:
                 for file in tqdm(files):
                     self._preprocess_file(root, file)
 
         if not keep_extracted:
-            print("Removing extracted files {}...".format(self.extracted_dir))
+            print(f"Removing extracted files {self.extracted_dir}...")
             shutil.rmtree(self.extracted_dir)
 
     def generate_manifest(self):
         for set_dir in self.dataset_dir:
-            manifest_path = os.path.join(self.dataset_dir, set_dir + '.tsv')
-            print("Writing manifest {}...".format(manifest_path))
+            manifest_path = os.path.join(self.dataset_dir, f'{set_dir}.tsv')
+            print(f"Writing manifest {manifest_path}...")
             write_manifest(self.dataset_dir,
                            manifest_path, 
                            max_frames=self.max_frames, 

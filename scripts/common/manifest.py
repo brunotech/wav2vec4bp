@@ -9,7 +9,7 @@ import soundfile
 
 def write_manifest(root, dest, ext='wav', path_must_contain=None, max_frames=None, min_frames=None):
     dir_path = os.path.realpath(root)
-    search_path = os.path.join(dir_path, '**/*.' + ext)
+    search_path = os.path.join(dir_path, f'**/*.{ext}')
 
     with open(dest, 'w') as tsv:
         print(dir_path, file=tsv)
@@ -25,7 +25,7 @@ def write_manifest(root, dest, ext='wav', path_must_contain=None, max_frames=Non
                 continue
             if min_frames and frames < min_frames:
                 continue
-            print('{}\t{}'.format(os.path.relpath(file_path, dir_path), frames), file=tsv)
+            print(f'{os.path.relpath(file_path, dir_path)}\t{frames}', file=tsv)
 
 
 if __name__ == '__main__':

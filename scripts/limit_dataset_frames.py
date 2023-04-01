@@ -21,12 +21,16 @@ if __name__ == '__main__':
     manifest_path = args.manifest
     words_path = manifest_path.split('.tsv')[0] + '.wrd'
     letters_path = manifest_path.split('.tsv')[0] + '.ltr'
-    
-    
-    out_manifest = open(os.path.join(args.output_dir, args.output_name + '.tsv'), 'w')
-    out_words = open(os.path.join(args.output_dir, args.output_name + '.wrd'), 'w')
-    out_letters = open(os.path.join(args.output_dir, args.output_name + '.ltr'), 'w')
-    
+
+
+    out_manifest = open(
+        os.path.join(args.output_dir, f'{args.output_name}.tsv'), 'w'
+    )
+    out_words = open(os.path.join(args.output_dir, f'{args.output_name}.wrd'), 'w')
+    out_letters = open(
+        os.path.join(args.output_dir, f'{args.output_name}.ltr'), 'w'
+    )
+
     with open(manifest_path) as train_manifest, open(words_path) as words, open(letters_path) as letters:            
         out_manifest.write(next(train_manifest))
         for manifest_line, word_line, letter_line in zip(train_manifest, words, letters):

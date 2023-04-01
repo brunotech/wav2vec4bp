@@ -50,10 +50,10 @@ class TedX(Corpus):
                 os.listdir(osp.join(self.extracted_dir, DEFAULT_SET_NAME, folder))
             ) == 0 or '.tar' in folder):
                 shutil.rmtree(osp.join(self.extracted_dir, DEFAULT_SET_NAME, folder))
-    
+
         super().pre_process_audios(keep_extracted=keep_extracted)
         preproc_dir = osp.join(self.dataset_dir, 'preprocessed')
-        
+
         for data_set in ['train', 'valid', 'test']:
             with open(osp.join(preproc_dir, DEFAULT_SET_NAME, 'data', data_set, 'txt', 'segments')) as segments:
                 def split_audios(line):
@@ -62,14 +62,33 @@ class TedX(Corpus):
                     raw_file = line.split()[1]
                     begin_split = float(line.split()[2])
                     end_split = float(line.split()[3])
-                    
+
                     cmd = "ffmpeg -i {} -acodec copy -ss {} -to {} {} -y".format(
-                        quote(osp.join(preproc_dir, DEFAULT_SET_NAME, 'data', data_set, 'wav', raw_file + '.wav')), 
+                        quote(
+                            osp.join(
+                                preproc_dir,
+                                DEFAULT_SET_NAME,
+                                'data',
+                                data_set,
+                                'wav',
+                                f'{raw_file}.wav',
+                            )
+                        ),
                         begin_split,
                         end_split,
-                        quote(osp.join(preproc_dir, DEFAULT_SET_NAME, 'data', data_set, 'wav', file_id + '.wav'))
+                        quote(
+                            osp.join(
+                                preproc_dir,
+                                DEFAULT_SET_NAME,
+                                'data',
+                                data_set,
+                                'wav',
+                                f'{file_id}.wav',
+                            )
+                        ),
                     )
                     os.system(cmd)
+
                 if self._num_jobs > 1:
                     with concurrent.futures.ProcessPoolExecutor(self._num_jobs) as executor:
                         futures = [executor.submit(split_audios, line) for line in segments]
@@ -80,9 +99,7 @@ class TedX(Corpus):
                         split_audios(line)
 
     def generate_dict(self):
-        with open(
-            osp.join(self.dataset_dir, 'preprocessed', DEFAULT_SET_NAME + '.ltr'), "r"
-        ) as ltr:
+        with open(osp.join(self.dataset_dir, 'preprocessed', f'{DEFAULT_SET_NAME}.ltr'), "r") as ltr:
             counter = Counter(letter for line in ltr for letter in line
                               if letter not in [' ', '"', '', '\n'])
         with open(
@@ -97,23 +114,23 @@ class TedX(Corpus):
             raise Error(f'Preprocessed data dir {preproc_dir} not found. Did you download and preprocessed the dataset?')
 
         for set_name in SET_NAMES:
-            manifest_path = osp.join(preproc_dir, set_name + '.tsv')
+            manifest_path = osp.join(preproc_dir, f'{set_name}.tsv')
             if osp.isfile(manifest_path):
                 print(f"Manifest {manifest_path} already exists")
             else:
-                print("Writing manifest {}...".format(manifest_path))
+                print(f"Writing manifest {manifest_path}...")
                 write_manifest(osp.join(preproc_dir, set_name), 
                                manifest_path, 
                                max_frames=self.max_frames, 
                                min_frames=self.min_frames)
-        
+
         for set_name in ['train', 'valid', 'test']:
             data_path = osp.join(preproc_dir, DEFAULT_SET_NAME, 'data', set_name)
-            manifest_path = osp.join(preproc_dir, set_name + '.tsv')
+            manifest_path = osp.join(preproc_dir, f'{set_name}.tsv')
             if osp.isfile(manifest_path):
                 print(f"Manifest {manifest_path} already exists")
             else:
-                print("Writing manifest {}...".format(manifest_path))
+                print(f"Writing manifest {manifest_path}...")
                 write_manifest(osp.join(data_path), 
                                manifest_path, 
                                max_frames=self.max_frames, 
@@ -127,26 +144,20 @@ class TedX(Corpus):
         sentences_by_fname = {}
         for set_name in ['train', 'valid', 'test']:
             txt_dir = osp.join(preproc_dir, DEFAULT_SET_NAME, 'data', set_name, 'txt')
-            with open(
-                osp.join(txt_dir, 'segments')
-            ) as segments, open(
-                osp.join(txt_dir, set_name + '.pt')
-            ) as transcriptions:
+            with (open(
+                        osp.join(txt_dir, 'segments')
+                    ) as segments, open(osp.join(txt_dir, f'{set_name}.pt')) as transcriptions):
                 for segl, transcription in zip(segments, transcriptions):
-                    file_name = segl.split()[0] + '.wav' 
+                    file_name = f'{segl.split()[0]}.wav'
                     sentences_by_fname[file_name] = transcription.rstrip()
 
         for set_name in [*SET_NAMES, 'train', 'valid', 'test']:
             print(f'Generating labels for set {set_name}')
-            manifest_path = osp.join(preproc_dir, set_name + '.tsv')
-            with open(manifest_path) as manifest_file, open(
-                osp.join(preproc_dir, set_name + ".ltr"), "w"
-            ) as ltr_out, open(
-                osp.join(preproc_dir, set_name + ".wrd"), "w"
-            ) as wrd_out:
+            manifest_path = osp.join(preproc_dir, f'{set_name}.tsv')
+            with (open(manifest_path) as manifest_file, open(osp.join(preproc_dir, f"{set_name}.ltr"), "w") as ltr_out, open(osp.join(preproc_dir, f"{set_name}.wrd"), "w") as wrd_out):
                 root = next(manifest_file).strip()
 
-                for i, line in enumerate(manifest_file):
+                for line in manifest_file:
                     fname = line.strip().split()[0].split('/')[-1]
                     sentence = sentences_by_fname[fname]
                     sentence = self._pre_process_transcript(sentence)

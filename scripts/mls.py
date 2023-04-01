@@ -52,9 +52,7 @@ class Mls(Corpus):
         super().pre_process_audios(keep_extracted=keep_extracted)
 
     def generate_dict(self):
-        with open(
-            osp.join(self.dataset_dir, 'preprocessed', DEFAULT_SET_NAME + '.ltr'), "r"
-        ) as ltr:
+        with open(osp.join(self.dataset_dir, 'preprocessed', f'{DEFAULT_SET_NAME}.ltr'), "r") as ltr:
             counter = Counter(letter for line in ltr for letter in line
                               if letter not in [' ', '"', '', '\n'])
         with open(
@@ -70,22 +68,22 @@ class Mls(Corpus):
             raise Error(f'Preprocessed data dir {preproc_dir} not found. Did you download and preprocessed the dataset?')
 
         for set_name in SET_NAMES:
-            manifest_path = osp.join(preproc_dir, set_name + '.tsv')
+            manifest_path = osp.join(preproc_dir, f'{set_name}.tsv')
             if osp.isfile(manifest_path):
                 print(f"Manifest {manifest_path} already exists")
             else:
-                print("Writing manifest {}...".format(manifest_path))
+                print(f"Writing manifest {manifest_path}...")
                 write_manifest(osp.join(preproc_dir, set_name), 
                             manifest_path, 
                             max_frames=self.max_frames, 
                             min_frames=self.min_frames)
 
         for set_name in ['train', 'dev', 'test']:
-            manifest_path = osp.join(preproc_dir, set_name + '.tsv')
+            manifest_path = osp.join(preproc_dir, f'{set_name}.tsv')
             if osp.isfile(manifest_path):
                 print(f"Manifest {manifest_path} already exists")
             else:
-                print("Writing manifest {}...".format(manifest_path))
+                print(f"Writing manifest {manifest_path}...")
                 write_manifest(osp.join(preproc_dir, DEFAULT_SET_NAME, set_name), 
                                manifest_path, 
                                max_frames=self.max_frames, 
@@ -105,15 +103,11 @@ class Mls(Corpus):
 
         for set_name in [*SET_NAMES, 'train', 'dev', 'test']:
             print(f'Generating labels for set {set_name}')
-            manifest_path = osp.join(preproc_dir, set_name + '.tsv')
-            with open(manifest_path) as manifest_file, open(
-                osp.join(preproc_dir, set_name + ".ltr"), "w"
-            ) as ltr_out, open(
-                osp.join(preproc_dir, set_name + ".wrd"), "w"
-            ) as wrd_out:
+            manifest_path = osp.join(preproc_dir, f'{set_name}.tsv')
+            with (open(manifest_path) as manifest_file, open(osp.join(preproc_dir, f"{set_name}.ltr"), "w") as ltr_out, open(osp.join(preproc_dir, f"{set_name}.wrd"), "w") as wrd_out):
                 root = next(manifest_file).strip()
 
-                for i, line in enumerate(manifest_file):
+                for line in manifest_file:
                     fname = line.strip().split()[0].split('/')[-1].split('.wav')[0]
                     sentence = sentences_by_fname[fname]
                     sentence = self._pre_process_transcript(sentence)

@@ -11,8 +11,8 @@ def main():
                         type=int, default=1)
     parser.add_argument("--max-size", help="Prune variety of words", type=int)
     args = parser.parse_args()
-    
-    words_counts = dict()
+
+    words_counts = {}
     unique = set()
 
     num_lines = sum(1 for _ in open(args.file))
@@ -20,7 +20,7 @@ def main():
     print('Counting words')
     with open(args.file, "r") as text_file:
         for line in tqdm(text_file, total=num_lines):
-        
+
             for word in line.split():
                 word = word.strip()
                 if word not in words_counts:
@@ -38,14 +38,13 @@ def main():
 
     prunned = 0
     print('Writting file')
-    with open(args.file) as text_file, open(args.output_file, 'w') as out:
+    with (open(args.file) as text_file, open(args.output_file, 'w') as out):
         for line in tqdm(text_file, total=num_lines):
-            ok = True
             line = line.rstrip()
-            for word in line.split():
-                if word not in words_counts or words_counts[word] < args.min_count:
-                    ok = False
-                    break
+            ok = not any(
+                word not in words_counts or words_counts[word] < args.min_count
+                for word in line.split()
+            )
             if not ok:
                 prunned += 1
                 continue

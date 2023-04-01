@@ -129,42 +129,31 @@ def process_predictions(
         if res_files is not None:
             if "timesteps" in hypo:
                 print(
-                    "{} ({}-{}) [{}]".format(hyp_pieces, speaker, id, hypo["timesteps"]),
+                    f'{hyp_pieces} ({speaker}-{id}) [{hypo["timesteps"]}]',
                     file=res_files["hypo.units"],
                 )
                 print(
-                    "{} ({}-{}) [{}]".format(hyp_words, speaker, id, hypo["timesteps"]),
+                    f'{hyp_words} ({speaker}-{id}) [{hypo["timesteps"]}]',
                     file=res_files["hypo.words"],
                 )
             else:
-                print(
-                    "{} ({}-{})".format(hyp_pieces, speaker, id),
-                    file=res_files["hypo.units"],
-                )
-                print(
-                    "{} ({}-{})".format(hyp_words, speaker, id),
-                    file=res_files["hypo.words"],
-                )
+                print(f"{hyp_pieces} ({speaker}-{id})", file=res_files["hypo.units"])
+                print(f"{hyp_words} ({speaker}-{id})", file=res_files["hypo.words"])
 
         tgt_pieces = tgt_dict.string(target_tokens)
         tgt_words = post_process(tgt_pieces, args.post_process)
-        
+
         if args.char_based_kenlm:
             tgt_words = tgt_words.replace(' ', '')
             tgt_words = tgt_words.replace('@', ' ')
 
         if res_files is not None:
-            print(
-                "{} ({}-{})".format(tgt_pieces, speaker, id),
-                file=res_files["ref.units"],
-            )
-            print(
-                "{} ({}-{})".format(tgt_words, speaker, id), file=res_files["ref.words"]
-            )
+            print(f"{tgt_pieces} ({speaker}-{id})", file=res_files["ref.units"])
+            print(f"{tgt_words} ({speaker}-{id})", file=res_files["ref.words"])
 
         if not args.quiet:
-            logger.info("HYPO:" + hyp_words)
-            logger.info("TARGET:" + tgt_words)
+            logger.info(f"HYPO:{hyp_words}")
+            logger.info(f"TARGET:{tgt_words}")
             logger.info("___________________")
 
         hyp_words = hyp_words.split()
@@ -185,15 +174,16 @@ def prepare_result_files(args):
         )
         return open(path, "w", buffering=1)
 
-    if not args.results_path:
-        return None
-
-    return {
-        "hypo.words": get_res_file("hypo.word"),
-        "hypo.units": get_res_file("hypo.units"),
-        "ref.words": get_res_file("ref.word"),
-        "ref.units": get_res_file("ref.units"),
-    }
+    return (
+        {
+            "hypo.words": get_res_file("hypo.word"),
+            "hypo.units": get_res_file("hypo.units"),
+            "ref.words": get_res_file("ref.word"),
+            "ref.units": get_res_file("ref.units"),
+        }
+        if args.results_path
+        else None
+    )
 
 
 def optimize_models(args, use_cuda, models):
@@ -256,7 +246,7 @@ def main(args, task=None, model_state=None):
         optimize_models(args, use_cuda, models)
         task.load_dataset(args.gen_subset, task_cfg=saved_cfg.task)
 
-    tgt_dict = task.target_dictionary 
+    tgt_dict = task.target_dictionary
     # Load dataset (possibly sharded)
     if args.char_based_kenlm:
         args2 = copy.deepcopy(args)
@@ -304,13 +294,13 @@ def main(args, task=None, model_state=None):
         for i in range(4, len(task.target_dictionary.symbols)):
             if task.target_dictionary.symbols[i] == '|':
                 task.target_dictionary.symbols[i] = ' @ '
-            task.target_dictionary.symbols[i] = ' ' + task.target_dictionary.symbols[i] + ' '
+            task.target_dictionary.symbols[i] = f' {task.target_dictionary.symbols[i]} '
         for s in dict(task.target_dictionary.indices):
             if s == '|':
                 symbol = '@'
-                symbol = ' ' + symbol + ' '
+                symbol = f' {symbol} '
             else:
-                symbol = ' ' + s + ' '
+                symbol = f' {s} '
             idx = task.target_dictionary.indices[s]
             del task.target_dictionary.indices[s]
             task.target_dictionary.indices[symbol] = idx
@@ -366,7 +356,7 @@ def main(args, task=None, model_state=None):
         generator = ExistingEmissionsDecoder(
             generator, np.load(args.load_emissions, allow_pickle=True)
         )
-        logger.info("loaded emissions from " + args.load_emissions)
+        logger.info(f"loaded emissions from {args.load_emissions}")
 
     num_sentences = 0
 
@@ -391,7 +381,7 @@ def main(args, task=None, model_state=None):
         models[0].bert.proj = None
     else:
         res_files = prepare_result_files(args)
-    
+
     hypos_words = []
     refs_words = []
     ids = []
@@ -505,7 +495,7 @@ def make_parser():
 def cli_main():    
     parser = make_parser()
     args = options.parse_args_and_arch(parser)
-    
+
     if args.output_csv is not None and not os.path.isfile(args.output_csv):
         with open(args.output_csv, 'w') as output_csv:
             output_csv.write('model,dataset,lm,subset,wer,cer,mer,wil,elapsed\n')
@@ -519,7 +509,7 @@ def cli_main():
         end = time.time()
     except Exception as e:
         with open('errors.txt', 'a') as ef:
-            print(str(e), str(args), file=ef, sep='\n', end='\n\n')
+            print(e, args, file=ef, sep='\n', end='\n\n')
         raise e
 
     wers = []

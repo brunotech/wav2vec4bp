@@ -10,7 +10,7 @@ def compute(ref, other, lower=False, metric='cer'):
     if lower:
         other = other.lower().strip()
     if metric == 'cer':
-        return jiwer.wer([char for char in ref], [char for char in other])
+        return jiwer.wer(list(ref), list(other))
     return jiwer.wer(ref, other)
 
 

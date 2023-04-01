@@ -13,8 +13,8 @@ def main():
     parser.add_argument("--min-count", help="Min occurence to count a word in the lexicon", 
                         type=int, default=1)
     args = parser.parse_args()
-    
-    words_counts = dict()
+
+    words_counts = {}
     raw_words = set()
 
     valid_chars = None
@@ -27,7 +27,7 @@ def main():
 
     with open(args.file, "r") as text_file:
         text = text_file.read()
-        
+
         for word in text.split():
             word = word.strip()
             if word not in words_counts:
@@ -38,11 +38,10 @@ def main():
             raw_words.add(word)
             if valid_chars is not None:
                 for c in word:
-                    if c not in valid_chars:
-                        if word in raw_words:
-                            del words_counts[word]
-                            raw_words.remove(word)
-    
+                    if c not in valid_chars and word in raw_words:
+                        del words_counts[word]
+                        raw_words.remove(word)
+
     if args.min_count > 1:
         words = set()
         skipped = 0
@@ -69,7 +68,7 @@ def main():
     with open(args.output_file.split('.')[0] + '.count.tsv', 'w') as count_tsv: 
         for word in words_counts:
             count_tsv.write(f'{word}\t{words_counts[word]}\n')
-    
+
     if args.output_dict is not None:
         with open(args.output_dict, 'w') as out:
             for word in dict(sorted(words_counts.items(), 

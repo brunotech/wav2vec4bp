@@ -98,9 +98,7 @@ class Lapsbm(Corpus):
         super().pre_process_audios(keep_extracted=keep_extracted)
 
     def generate_dict(self):
-        with open(
-            osp.join(self.dataset_dir, 'preprocessed', DEFAULT_SET_NAME + '.ltr'), "r"
-        ) as ltr:
+        with open(osp.join(self.dataset_dir, 'preprocessed', f'{DEFAULT_SET_NAME}.ltr'), "r") as ltr:
             counter = Counter(letter for line in ltr for letter in line
                               if letter not in [' ', '"', '', '\n'])
         with open(
@@ -115,27 +113,27 @@ class Lapsbm(Corpus):
             raise Error(f'Preprocessed data dir {preproc_dir} not found. Did you download and preprocessed the dataset?')
 
         for set_name in SET_NAMES:
-            manifest_path = osp.join(preproc_dir, set_name + '.tsv')
+            manifest_path = osp.join(preproc_dir, f'{set_name}.tsv')
             if osp.isfile(manifest_path):
                 print(f"Manifest {manifest_path} already exists")
             else:
-                print("Writing manifest {}...".format(manifest_path))
+                print(f"Writing manifest {manifest_path}...")
                 write_manifest(osp.join(preproc_dir, set_name), 
                             manifest_path, 
                             max_frames=self.max_frames, 
                             min_frames=self.min_frames)
-        
+
         data_sets = self._create_sets()
 
         for data_set in data_sets:
             print(f'Processing {data_set}')
             set_dir = osp.join(preproc_dir, data_set)
-            
+
             manifest_path = osp.join(preproc_dir, f'{data_set}.tsv')
             if osp.isfile(manifest_path):
                 print(f"Manifest {manifest_path} already exists")
             else:
-                print("Writing manifest {}...".format(manifest_path))
+                print(f"Writing manifest {manifest_path}...")
                 write_manifest(set_dir, manifest_path, max_frames=self.max_frames, min_frames=self.min_frames)
 
     def generate_labels(self):
@@ -144,13 +142,9 @@ class Lapsbm(Corpus):
 
         for set_name in [*SET_NAMES, 'train', 'test']:
             print(f'Generating labels for set {set_name}')
-            manifest_path = osp.join(preproc_dir, set_name + '.tsv')
+            manifest_path = osp.join(preproc_dir, f'{set_name}.tsv')
             transcriptions = {}
-            with open(manifest_path) as manifest_file, open(
-                osp.join(preproc_dir, set_name + ".ltr"), "w"
-            ) as ltr_out, open(
-                osp.join(preproc_dir, set_name + ".wrd"), "w"
-            ) as wrd_out:
+            with (open(manifest_path) as manifest_file, open(osp.join(preproc_dir, f"{set_name}.ltr"), "w") as ltr_out, open(osp.join(preproc_dir, f"{set_name}.wrd"), "w") as wrd_out):
                 root = next(manifest_file).strip()
                 for dir in tqdm(os.listdir(root)):
                     if not osp.isdir(osp.join(root, dir)): 

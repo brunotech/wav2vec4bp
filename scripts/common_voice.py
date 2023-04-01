@@ -140,14 +140,13 @@ class CommonVoice(Corpus):
             counter = Counter(letter for line in ltr for letter in line
                               if letter not in [' ', '"', '', '\n'])
         with open(
-            osp.join(self.dataset_dir, 'preprocessed', 'dict.ltr.txt'), "w"
-        ) as dict_f:
+                osp.join(self.dataset_dir, 'preprocessed', 'dict.ltr.txt'), "w"
+            ) as dict_f:
             for c in counter.most_common():
                 print(f"{c[0]} {c[1]}", file=dict_f)
             for c in self.vocab:
-                if c not in counter:
-                    if c != ' ':
-                        print(f"{c} 0", file=dict_f)
+                if c not in counter and c != ' ':
+                    print(f"{c} 0", file=dict_f)
 
     def generate_manifest(self):
         print('Generating manifests')
@@ -156,16 +155,16 @@ class CommonVoice(Corpus):
             raise Error(f'Preprocessed data dir {preproc_dir} not found. Did you download and preprocessed the dataset?')
 
         for set_name in SET_NAMES:
-            manifest_path = osp.join(preproc_dir, set_name + '.tsv')
+            manifest_path = osp.join(preproc_dir, f'{set_name}.tsv')
             if osp.isfile(manifest_path):
                 print(f"Manifest {manifest_path} already exists")
             else:
-                print("Writing manifest {}...".format(manifest_path))
+                print(f"Writing manifest {manifest_path}...")
                 write_manifest(osp.join(preproc_dir, set_name, 'clips'), 
                             manifest_path, 
                             max_frames=self.max_frames, 
                             min_frames=self.min_frames)
-        
+
         data_sets = self._create_sets()
 
         for data_set in data_sets:
@@ -175,7 +174,7 @@ class CommonVoice(Corpus):
             if osp.isfile(manifest_path):
                 print(f"Manifest {manifest_path} already exists")
             else:
-                print("Writing manifest {}...".format(manifest_path))
+                print(f"Writing manifest {manifest_path}...")
                 write_manifest(set_dir, manifest_path, max_frames=self.max_frames, min_frames=self.min_frames)
 
     def generate_labels(self):
@@ -186,14 +185,10 @@ class CommonVoice(Corpus):
         for data_set in data_sets:
             print(f'Generating labels for set {data_set}')
             manifest_path = osp.join(preproc_dir, f'{data_set}.tsv')
-            with open(manifest_path) as manifest_file, open(
-                osp.join(preproc_dir, data_set + ".ltr"), "w"
-            ) as ltr_out, open(
-                osp.join(preproc_dir, data_set + ".wrd"), "w"
-            ) as wrd_out:
+            with (open(manifest_path) as manifest_file, open(osp.join(preproc_dir, f"{data_set}.ltr"), "w") as ltr_out, open(osp.join(preproc_dir, f"{data_set}.wrd"), "w") as wrd_out):
                 root = next(manifest_file).strip()
 
-                for i, line in enumerate(manifest_file):
+                for line in manifest_file:
                     fp = line.strip().split()[0]
                     transc = self._pre_process_transcript(data_sets[data_set][os.path.basename(fp)])
                     print(transc, file=wrd_out)
